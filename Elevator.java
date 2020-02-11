@@ -1,4 +1,7 @@
 package project;
+
+import java.util.List;
+
 /**
  * Thread for the elevator subsystem
  */
@@ -8,27 +11,20 @@ public class Elevator implements Runnable{
 	public int[] destination;
 	public int elevatorNumber;
 	public int currentFloor;
+	public List<Integer> inputFloor, destinations, elevatorList;
 	public Scheduler scheduler;
-	public Control control;
 	/*
-	 * Initiallizes the Elevator thread and sets currentfloor to 1
+	 * Initializes the Elevator thread and sets current floor to 1
 	 * @param elevatorNumber the number of the elevator, so that there can be multiple elevators at once
 	 * @param control the Control class that allows everything to communicate with one another
 	 */
-	
-	/**
-	 * Initializes the Elevator thread and sets currentFloor to 1.
-	 * @param elevatorNumber the number of the elevator, so that there can be multiple elevators at once
-	 * @param control the Control class that allows everything to communicate with one another
-
-	 */
-	public Elevator(int elevatorNumber, Control control) {
+	public Elevator(int elevatorNumber, Scheduler scheduler) {
+		this.scheduler = scheduler;
 		this.elevatorNumber = elevatorNumber;
-		this.control = control;
 		currentFloor = 1;
 	}
 	/**
-	 * This method prints out an explenation of the movement of the elevator.
+	 * This method prints out an explanation of the movement of the elevator.
 	 * 
 	 * @param inputFloor The floor at which passengers are picked up 
 	 * @param currentFloor the starting floor of the elevator
@@ -43,15 +39,15 @@ public class Elevator implements Runnable{
 	public void run() {
 		while(true) {
 			//If the elevatorList isn't empty and dataOut is true
-			if(!control.elevatorList.isEmpty() && control.dataOut) {
+			if(!scheduler.elevatorList.isEmpty()) {
 				//Prints that it has arrived at the destination
-				goToDestination(control.elevatorList.get(0), currentFloor, control.elevatorList.get(1));
+				goToDestination(scheduler.elevatorList.get(0), currentFloor, scheduler.elevatorList.get(1));
 				//changes currentFloor to the floor that was the destination
-				currentFloor = control.elevatorList.get(1);
+				currentFloor = scheduler.elevatorList.get(1);
 				//removes the initial floor that a passenger is picked up on
-				control.elevatorList.remove(0);
+				scheduler.elevatorList.remove(0);
 				//removes the initial floor that was set to be the destination.
-				control.elevatorList.remove(0);
+				scheduler.elevatorList.remove(0);
 			}
 			//sleeps if the conditions aren't met.
 			try {
