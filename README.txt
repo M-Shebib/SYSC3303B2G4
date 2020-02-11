@@ -37,12 +37,10 @@ Files/Folders in zip folder :
 1) ProjectIteration1
 
 1.a)Config.java
-1.b)Control.java
 1.c)ElevatorData.txt
 1.d)Floor.java
-1.e)planning.java
 1.f)Scheduler.java
-1.g)Test.java
+
 
 2. README.txt
 
