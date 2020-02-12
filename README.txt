@@ -19,7 +19,7 @@ naming convention
 
 -Floor : This is a thread that is named after the fact that it is in charge of the Floor subsystem which reads and interprets the inputs of which floor is the destination as well as what is the time and current floor.
 
--Scheduler : This thread is named for being in charge of the scheduler subsystem which communicates with the Floor and Elevator Subsystems to give them the necessary information to run properly.
+-Scheduler : This class is named for being in charge of the scheduler subsystem which communicates with the Floor and Elevator Subsystems to give them the necessary information to run properly.
 
 Set up Instructions.
 
