@@ -8,20 +8,24 @@ import java.util.List;
 
 public class Elevator implements Runnable{
 	
+	private boolean dir; //private boolean for indicating whether the button on the elevator is for up or down. with True being up and False being down.
+	private ElevatorState ElevatorUse; //The elevator currently in use
 	public int[] destination;
 	public int elevatorNumber;
 	public int currentFloor;
 	public List<Integer> inputFloor, destinations, elevatorList;
 	public Scheduler scheduler;
 	/*
-	 * Initializes the Elevator thread and sets current floor to 1
+	 * Initializes the Elevator thread and sets current floor to 1 and the direction to up and initializes ElevatorUse
 	 * @param elevatorNumber the number of the elevator, so that there can be multiple elevators at once
 	 * @param control the Control class that allows everything to communicate with one another
 	 */
 	public Elevator(int elevatorNumber, Scheduler scheduler) {
+		ElevatorState ElevatorUse = ElevatorState.Idle;
 		this.scheduler = scheduler;
 		this.elevatorNumber = elevatorNumber;
 		currentFloor = 1;
+		dir = true;
 	}
 	/**
 	 * This method prints out an explanation of the movement of the elevator.
@@ -38,8 +42,19 @@ public class Elevator implements Runnable{
 	 */
 	public void run() {
 		while(true) {
-			//If the elevatorList isn't empty and dataOut is true
+			//Determines based off of elevatorList which direction the elevator is going to be going
+			if(currentFloor - scheduler.elevatorList.get(1) > 0) {
+				dir = false;
+			}
+			else {
+				dir = true;
+			}
+			//Switches Elevator into ready to move state
+			ElevatorUse.nextState(dir);
+			//If the elevatorList isn't empty and dataOut is true			
 			if(!scheduler.elevatorList.isEmpty()) {
+				//Sets Elevator to moving towards destination
+				ElevatorUse.nextState(dir);
 				//Prints that it has arrived at the destination
 				goToDestination(scheduler.elevatorList.get(0), currentFloor, scheduler.elevatorList.get(1));
 				//changes currentFloor to the floor that was the destination
@@ -48,6 +63,8 @@ public class Elevator implements Runnable{
 				scheduler.elevatorList.remove(0);
 				//removes the initial floor that was set to be the destination.
 				scheduler.elevatorList.remove(0);
+				//Sets elevator back to idle.
+				ElevatorUse.nextState(dir);
 			}
 			//sleeps if the conditions aren't met.
 			try {
