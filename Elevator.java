@@ -18,7 +18,7 @@ public class Elevator implements Runnable{
 	/*
 	 * Initializes the Elevator thread and sets current floor to 1 and the direction to up and initializes ElevatorUse
 	 * @param elevatorNumber the number of the elevator, so that there can be multiple elevators at once
-	 * @param control the Control class that allows everything to communicate with one another
+	 * @param scheduler the Scheduler class that allows everything to communicate with one another
 	 */
 	public Elevator(int elevatorNumber, Scheduler scheduler) {
 		ElevatorState ElevatorUse = ElevatorState.Idle;
