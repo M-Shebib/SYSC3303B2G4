@@ -1,4 +1,3 @@
-package project;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,7 +42,7 @@ public class Scheduler {
 	public static void main(String[] args) {
 		Scheduler scheduler = new Scheduler();
 		Thread elevator = new Thread(new Elevator(1, scheduler), "elevator1");
-		Thread floor = new Thread(new Floor(scheduler), "floorsystem");
+		Thread floor = new Thread(new Floor(scheduler, "ElevatorData.txt"), "floorsystem");
 		floor.start();
 		elevator.start();
 	}
