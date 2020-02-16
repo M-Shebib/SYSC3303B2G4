@@ -1,4 +1,3 @@
-package project;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -15,16 +14,16 @@ public class Floor implements Runnable{
 	public String instructions;
 	public int currentTime, inputTime;
 	public int floorNumber, destination;
-	public List<Integer> inputFloor, destinations;
+	public List<Integer> inputFloors, destinations;
 	public Scheduler scheduler;
 	/**
 	 * Creates an instance of the floor thread connected to the control.
 	 * As well as attempts to read a file that has the inputs.
 	 */
-	public Floor(Scheduler scheduler) {
+	public Floor(Scheduler scheduler, String inputFile) {
 		this.scheduler = scheduler;
 		try {
-			input = new BufferedReader(new FileReader("ElevatorData.txt"));
+			input = new BufferedReader(new FileReader(inputFile));
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
@@ -37,6 +36,10 @@ public class Floor implements Runnable{
 		String[] data = instructions.split(",");
 		String[]timeTemp = data[0].split("[:\\.]");
 		inputTime=Integer.parseInt(timeTemp[0])*3600000+Integer.parseInt(timeTemp[1])*60000+Integer.parseInt(timeTemp[2])*1000+Integer.parseInt(timeTemp[3]);
+		if (currentTime > inputTime){
+			System.out.println("Input occurred before the previous input");
+			System.exit(1);
+		}
 		if(currentTime==0) {
 			currentTime=inputTime;
 		}
@@ -49,25 +52,33 @@ public class Floor implements Runnable{
 	 */
 	public void run() {
 		try {
+			 
 			//If there is still a line of buffered reader with instructions execute read data
 			while((instructions = input.readLine()) !=null) {
-				readData();
-			//When all of the instructions are read there is a pause and then the floor number
-			//and destination are added to control system.
-				try {
+				if (instructions.matches("\\d{2}:\\d{2}:\\d{2}:\\d{2},\\d{2},\\d{2}")) {
+					readData();
+					//When all of the instructions are read there is a pause and then the floor number
+					//and destination are added to control system.
+					try {
 						Thread.sleep(inputTime-currentTime);
-						System.out.println("input recieved after "+ (inputTime-currentTime)+" ms, sending data to scheduler in ");
+						System.out.println("input recieved after "+ (inputTime-currentTime)+" ms, sending data to scheduler");
 						currentTime=inputTime;
 						scheduler.inputFloors.add(floorNumber);
 						scheduler.destinations.add(destination);
 						scheduler.receiveData(floorNumber, destination);
+					}
+					catch (InterruptedException e) {
+					
+					}
 				}
-				catch (InterruptedException e) {
-				
+				else {
+					System.out.println("invalid inputfile format");
+					break;
 				}
 			}
-		} catch (IOException e) {
-			
 		}
+		catch (IOException e) {
+				
+		}	
 	}
 }
