@@ -37,7 +37,7 @@ public class Floor implements Runnable{
 		String[]timeTemp = data[0].split("[:\\.]");
 		inputTime=Integer.parseInt(timeTemp[0])*3600000+Integer.parseInt(timeTemp[1])*60000+Integer.parseInt(timeTemp[2])*1000+Integer.parseInt(timeTemp[3]);
 		if (currentTime > inputTime){
-			System.out.println("Input occurred before the previous input");
+			System.out.println("Floor subsystem: Input occurred before the previous input");
 			System.exit(1);
 		}
 		if(currentTime==0) {
@@ -61,7 +61,7 @@ public class Floor implements Runnable{
 					//and destination are added to control system.
 					try {
 						Thread.sleep(inputTime-currentTime);
-						System.out.println("input recieved after "+ (inputTime-currentTime)+" ms, sending data to scheduler");
+						System.out.println("Floor Subsystem: input recieved after "+ (inputTime-currentTime)+" ms, sending data to scheduler");
 						currentTime=inputTime;
 						scheduler.inputFloors.add(floorNumber);
 						scheduler.destinations.add(destination);
@@ -72,7 +72,7 @@ public class Floor implements Runnable{
 					}
 				}
 				else {
-					System.out.println("invalid inputfile format");
+					System.out.println("Floor subsystem: invalid inputfile format");
 					break;
 				}
 			}
