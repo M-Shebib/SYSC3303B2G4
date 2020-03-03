@@ -33,7 +33,7 @@ public class Elevator implements Runnable{
 	 * @param destination The destination floor
 	 */
 	public void goToDestination(int inputFloor, int currentFloor, int destination) {
-		System.out.println("Elevator moved from floor " + currentFloor + " and picked up a passenger on floor " + inputFloor + " then dropped the passenger off at floor " + destination);
+		System.out.println("Elevator system: Elevator moved from floor " + currentFloor + " and picked up a passenger on floor " + inputFloor + " then dropped the passenger off at floor " + destination);
 	}
 	/**
 	 * runs the elevator thread
@@ -75,3 +75,4 @@ public class Elevator implements Runnable{
 		
 	}
 }
+
