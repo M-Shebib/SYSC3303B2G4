@@ -1,88 +1,83 @@
-import java.util.ArrayList;
-import java.util.List;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.List;
 /**
- * 
- * Subsystem that communicates with the floors and elevator through the control
- *
+ * This thread is for the floor subsystem which knows what the initial floor is
+ * as well as reads to determine the target floor.
  */
-public class Scheduler {
-	public List<Integer> floors;
-	public List<Elevator> elevators;
-	public double inputTime;
-	public List<Integer> inputFloors, destinations, elevatorList; //List of aspects of the elevator
-	public boolean dataIn, dataOut;
-	private boolean elevatorFound;
+public class Floor implements Runnable{
 	
+	public BufferedReader input;
+	public String instructions;
+	public int currentTime, inputTime;
+	public int floorNumber;
+	public List<Integer> inputFloors;
+	public Scheduler scheduler;
+	public int dir;
 	/**
-	 * Simple constructor which connects the scheduler with the controller
-	 * @param control is a class which allows for the three threads to communicate
+	 * Creates an instance of the floor thread connected to the control.
+	 * As well as attempts to read a file that has the inputs.
 	 */
-	public Scheduler(int numOfElev, int numOfFloors) {
-		destinations = new ArrayList<Integer>();
-		elevatorList = new ArrayList<Integer>();
-		inputFloors = new ArrayList<Integer>();
-		elevators = new ArrayList<Elevator>();
-		for (int i = 0; i < numOfElev; i++) {
-			Elevator temp = new Elevator(i, this);
-			elevators.add(temp);
+	public Floor(Scheduler scheduler, String inputFile) {
+		this.scheduler = scheduler;
+		try {
+			input = new BufferedReader(new FileReader(inputFile));
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
 		}
-		floors = new ArrayList<Integer>();
-		for (int j = 0; j < numOfFloors; j++) {
-			floors.add(j);
-		}
-		dataIn = false;
-		dataOut = false;
 	}
 	/**
-	 * 
-	 * Confirms that data has been received from floor and sets data out to true.
-	 * This allows the elevator thread to run properly.
-	 * 
-	 * @param inputFloor the floor that the elevator is on when it receives the command
-	 * @param destination the floor that the elevator will be going towards.
+	 * Takes the data held in the input buffered reader and separates it into values that
+	 * are able to be used by the scheduler and Elevator.
 	 */
-	public synchronized void receiveData(int inputFloor) {
-		System.out.print("Scheduler: Data recieved from floor " + inputFloor + "\n");
-		dataOut = true;
-		elevatorList.add(inputFloor);
-		inputFloors.remove(0);
-		destinations.remove(0);
-		moveElevator(inputFloor);
+	public void readData() {
+		String[] data = instructions.split(",");
+		String[]timeTemp = data[0].split("[:\\.]");
+		inputTime=Integer.parseInt(timeTemp[0])*3600000+Integer.parseInt(timeTemp[1])*60000+Integer.parseInt(timeTemp[2])*1000+Integer.parseInt(timeTemp[3]);
+		if (currentTime > inputTime){
+			System.out.println("Floor subsystem: Input occurred before the previous input");
+			System.exit(1);
+		}
+		if(currentTime==0) {
+			currentTime=inputTime;
+		}
+		floorNumber = Integer.parseInt(data[1]);
+		dir = Integer.parseInt(data[2]);
+		
 	}
-	public void moveElevator(int inputFloor) {
-		for (int i = 0; i < elevators.size(); i++) {
-			while (!elevatorFound) {
-				if (elevators.get(i).ElevatorUse == ElevatorState.Idle) {
-					while (elevators.get(i).currentFloor != inputFloor){
-						if (elevators.get(i).currentFloor < inputFloor) {
-							elevators.get(i).moveUp();
-						}
-						if (elevators.get(i).currentFloor > inputFloor) {
-							elevators.get(i).moveDown();
-						}
+	/**
+	 * runs the floor thread
+	 */
+	public void run() {
+		try {
+			 
+			//If there is still a line of buffered reader with instructions execute read data
+			while((instructions = input.readLine()) !=null) {
+				if (instructions.matches("\\d{2}:\\d{2}:\\d{2}:\\d{2},\\d{2},\\d{1}")) {
+					readData();
+					//When all of the instructions are read there is a pause and then the floor number
+					//and destination are added to control system.
+					try {
+						Thread.sleep(inputTime-currentTime);
+						System.out.println("Floor Subsystem: input recieved after "+ (inputTime-currentTime)+" ms, sending data to scheduler");
+						currentTime=inputTime;
+						scheduler.inputFloors.add(floorNumber);
 					}
-					elevatorFound = true;
-					System.out.println("Scheduler: Elevator " + (i+1) + " moved to floor " + inputFloor);
+					catch (InterruptedException e) {
+					
+					}
+				}
+				else {
+					System.out.println("Floor subsystem: invalid inputfile format");
+					break;
 				}
 			}
 		}
-	}
-	
-	public synchronized void moveElevatorToDestination(int elevatorNumber, int destination) {
-		if (elevators.get(elevatorNumber).currentFloor < destination) {
-			elevators.get(elevatorNumber).moveUp();
-		}
-		if (elevators.get(elevatorNumber).currentFloor > destination) {
-			elevators.get(elevatorNumber).moveDown();
-		}
-	}
-	
-	public static void main(String[] args) {
-		Scheduler scheduler = new Scheduler(1, 30);
-		Thread elevator = new Thread(new Elevator(1, scheduler), "elevator1");
-		Thread floor = new Thread(new Floor(scheduler, "ElevatorData.txt"), "floorsystem");
-		floor.start();
-		elevator.start();
+		catch (IOException e) {
+				
+		}	
 	}
 }
