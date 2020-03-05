@@ -6,8 +6,7 @@ import java.util.List;
 
 public class Elevator implements Runnable{
 	
-	private boolean dir; //private boolean for indicating whether the button on the elevator is for up or down. with True being up and False being down.
-	private ElevatorState ElevatorUse; //The elevator currently in use
+	public ElevatorState ElevatorUse; //The elevator currently in use
 	public int[] destination;
 	public int elevatorNumber;
 	public int currentFloor;
@@ -23,7 +22,6 @@ public class Elevator implements Runnable{
 		this.scheduler = scheduler;
 		this.elevatorNumber = elevatorNumber;
 		currentFloor = 1;
-		dir = true;
 	}
 	/**
 	 * This method prints out an explanation of the movement of the elevator.
@@ -32,8 +30,16 @@ public class Elevator implements Runnable{
 	 * @param currentFloor the starting floor of the elevator
 	 * @param destination The destination floor
 	 */
-	public void goToDestination(int inputFloor, int currentFloor, int destination) {
-		System.out.println("Elevator system: Elevator moved from floor " + currentFloor + " and picked up a passenger on floor " + inputFloor + " then dropped the passenger off at floor " + destination);
+	public void moveUp() {
+		currentFloor ++;
+		System.out.println("Elevator system: Elevator moved up to 1 floor");
+	}
+	public void moveDown() {
+		currentFloor --;
+		System.out.println("Elevator system: Elevator moved down to 1 floor");
+	}
+	public void destinationInput(int destInput) {
+		scheduler.moveElevatorToDestination(this.elevatorNumber, destInput);
 	}
 	/**
 	 * runs the elevator thread
@@ -41,38 +47,8 @@ public class Elevator implements Runnable{
 	public void run() {
 		while(true) {
 			
-			//If the elevatorList isn't empty and dataOut is true			
-			if(!scheduler.elevatorList.isEmpty()) {
-				//Determines based off of elevatorList which direction the elevator is going to be going
-				if(currentFloor - scheduler.elevatorList.get(1) > 0) {
-					dir = false;
-				}
-				else {
-					dir = true;
-				}
-				//Switches Elevator into ready to move state
-				ElevatorUse.nextState(dir);
-				//Sets Elevator to moving towards destination
-				ElevatorUse.nextState(dir);
-				//Prints that it has arrived at the destination
-				goToDestination(scheduler.elevatorList.get(0), currentFloor, scheduler.elevatorList.get(1));
-				//changes currentFloor to the floor that was the destination
-				currentFloor = scheduler.elevatorList.get(1);
-				//removes the initial floor that a passenger is picked up on
-				scheduler.elevatorList.remove(1);
-				//removes the initial floor that was set to be the destination.
-				scheduler.elevatorList.remove(0);
-				//Sets elevator back to idle.
-				ElevatorUse.nextState(dir);
-			}
-			//sleeps if the conditions aren't met.
-			try {
-				Thread.sleep(200);
-			}catch (InterruptedException e) {
-				
-			}
+			
 		}
 		
 	}
 }
-
