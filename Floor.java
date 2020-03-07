@@ -103,46 +103,5 @@ public class Floor implements Runnable{
 				
 		}	
 	}
-	public void sendData (byte[] data, InetAddress IP, int port) {
-		
-		sendPacket = new DatagramPacket(data, data.length, IP, schedulerPort);
-		System.out.println("Elevator: Sending packet:");
-		System.out.println("To host: " + sendPacket.getAddress());
-		System.out.println("Destination host port: " + sendPacket.getPort());
-		int len = sendPacket.getLength();
-		System.out.println("Length: " + len);
-		System.out.print("Containing: ");
-		System.out.println(Arrays.toString(data)); // or could print "s"
-		try {
-			sendSocket.send(sendPacket);
-		} catch (IOException e) {
-			e.printStackTrace();
-			System.exit(1);
-		}
-		System.out.println("Elevator: Packet sent.\n");
-	}
-	
-	public void receiveData() {
-		byte data[] = new byte[100];
-		receivePacket = new DatagramPacket(data, data.length);
-		System.out.println("Elevator: Waiting for Packet.\n");
 
-		try {
-			
-			receiveSocket.receive(receivePacket);
-		} catch (IOException e) {
-			System.out.print("IO Exception: likely:");
-			System.out.println("Receive Socket Timed Out.\n" + e);
-			e.printStackTrace();
-			System.exit(1);
-		}
-		// Process the received Datagram.
-		System.out.println("Elevator: Packet received:");
-		System.out.println("From host: " + receivePacket.getAddress());
-		System.out.println("Host port: " + receivePacket.getPort());
-		int len = receivePacket.getLength();
-		System.out.println("Length: " + len);
-		System.out.print("Containing: ");
-		System.out.println(Arrays.toString(data) + "\n");
-}
 }
