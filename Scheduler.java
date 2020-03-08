@@ -15,6 +15,7 @@ public class Scheduler {
 	int elevatorPort, floorPort;
 	private List<Integer> floors;
 	private List<Elevator> elevators;
+	@SuppressWarnings("unused") //SchedulerUse isn't currently used
 	private SchedulerState SchedulerUse;
 	private double inputTime;
 	private String time; //Time in the format of hh:mm:ss
@@ -35,6 +36,7 @@ public class Scheduler {
 			se.printStackTrace();
 			System.exit(1);
 		}
+		currElev = -1;
 		destinations = new ArrayList<Integer>();
 		elevatorList = new ArrayList<Integer>();
 		inputFloors = new ArrayList<Integer>();
@@ -118,7 +120,7 @@ public class Scheduler {
 				e.printStackTrace();
 				System.exit(1);
 			}
-			System.out.println(floorData[1]+" Scheduler: Data received from floor"+floorData[2]+" and sent to elevator");
+			System.out.println(floorData[1]+" Scheduler: Data received from floor"+floorData[2]+" and sent to elevator "+ currElev);
 		}
 		
 		
@@ -158,6 +160,18 @@ public class Scheduler {
 	public InetAddress getFloorAddress() {
 		return floorAddress;
 	}
+	public double getInputTime() {
+		return inputTime;
+	}
+	public void setInputTime(double inputTime) {
+		this.inputTime = inputTime;
+	}
+	public List<Integer> getInputFloors() {
+		return inputFloors;
+	}
+	public void setInputFloors(List<Integer> inputFloors) {
+		this.inputFloors = inputFloors;
+	}
 	public void setFloorAddress(InetAddress floorAddress) {
 		this.floorAddress = floorAddress;
 	}
@@ -173,5 +187,16 @@ public class Scheduler {
 	public void setElevatorList(List<Integer> elevatorList) {
 		this.elevatorList = elevatorList;
 	}
-	
+	/**
+	 * @param inputFloor the inputFloor to add to list
+	 */
+	public void addInputFloor(Integer inputFloor) {
+		this.inputFloors.add(inputFloor);
+	}
+	/**
+	 * @param destinations the destinations to add to list
+	 */
+	public void addDestinations(Integer destination) {
+		this.destinations.add(destination);
+	}	
 }
