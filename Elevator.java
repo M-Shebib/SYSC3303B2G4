@@ -10,15 +10,15 @@ import java.math.*;
  */
 
 public class Elevator implements Runnable{
-	DatagramPacket sendPacketE, recievePacket;
-	DatagramSocket sendSocketE, recieveSocket;
-	int elevatorPort;
-	InetAddress elevatorAddress;
+	DatagramPacket sendPacketE, recievePacket; //DatagramPacket for recieval and sending of datagram packets
+	DatagramSocket sendSocketE, recieveSocket; //DatagramSocket for the receival and sending of packets within the sockets
+	int elevatorPort; //integer for the port associated with the Elevator
+	InetAddress elevatorAddress; //Address for the elevator
 	private ElevatorState ElevatorUse; //The elevator currently in use
-	private int elevatorNumber;
-	private int currentFloor;
-	private boolean dir;
-	private String time;
+	private int elevatorNumber; //individual identifier of this elevator
+	private int currentFloor; //current floor that the elevator is on
+	private boolean dir; //direction the elevator is going
+	private String time; //Time of the movement
 	private List<Integer> inputFloor, destinations, elevatorList;
 	private Scheduler scheduler;
 	/*
@@ -33,7 +33,7 @@ public class Elevator implements Runnable{
 		setCurrentFloor(1);
 	}
 	/**
-	 * 
+	 * moves the elevator up one floor and sends the updated data to the scheduler
 	 */
 	public void moveUp() {
 		if(!getElevatorUse().name().equals("Moving")) {
@@ -44,7 +44,7 @@ public class Elevator implements Runnable{
 		sendData();
 	}
 	/**
-	 * 
+	 * moves the elevator down one floor and sends the updated data to the scheduler
 	 */
 	public void moveDown() {
 		if(!getElevatorUse().name().equals("Moving")) {
@@ -54,13 +54,7 @@ public class Elevator implements Runnable{
 		System.out.println("Elevator system: Elevator moved down to 1 floor");
 		sendData();
 	}
-	/**
-	 * 
-	 * @param destInput
-	 */
-	public void destinationInput(int destInput) {
-		scheduler.moveElevatorToDestination(this.elevatorNumber, destInput);
-	}
+
 	/**
 	 * runs the elevator thread
 	 */
@@ -101,11 +95,11 @@ public class Elevator implements Runnable{
 		}
 		
 	/**
-	 * 
+	 * receives the datagrampacket
 	 */
 	public synchronized void receiveData() {
 		byte data[] = new byte[250];
-		//datagramPacket that is meant to receive the socket
+		//datagramPacket that is meant to receive the packet of data
 		recievePacket = new DatagramPacket(data, data.length);
 		System.out.print("Elevator: Waiting for input Packet. \n");
 		try {
@@ -134,27 +128,30 @@ public class Elevator implements Runnable{
 		}
 		else {
 		}
-		String[] schedulerData = recieved.split(",");
-		time = schedulerData[0];
-		destinations.add(Integer.parseInt(schedulerData[1]));
-		dir = Boolean.parseBoolean(schedulerData[2]);
+		String[] schedulerData = recieved.split(","); //splits elements of the datagram which are split up by commas
+		time = schedulerData[0]; //First element of the datagram is the time
+		destinations.add(Integer.parseInt(schedulerData[1])); //second element of datagram is the destination
+		dir = Boolean.parseBoolean(schedulerData[2]); //third and final element of datagram is whether the elevator is going up or down. with up being true and down being false
 		
 		
 	}
 	/**
 	 * 
-	 * @return
+	 * @return the destination closest to the currentFloor of the Elevator.
 	 */
 	public int closestDestination() {
-		int closeDest=1000;
-		for(int i = 0; i<destinations.size(); i++) {
-			if((Math.abs(currentFloor-destinations.get(i)))>(Math.abs(currentFloor-closeDest))) {
-				closeDest = destinations.get(i);
+		int closeDest=1000; //int is so high that the data will be replaced by a destination
+		for(int i = 0; i < destinations.size(); i++) {//for the size of the destinations list
+			if((Math.abs(currentFloor-destinations.get(i)))<(Math.abs(currentFloor-closeDest))) {//absolute difference means that if the current floor is closer to the destination it is true
+				closeDest = destinations.get(i); //changes closeDest to be the destination that is being checked
 			}
 		}
 		return closeDest;
 		
 	}
+	/**
+	 * sends a Datagram containing the identifier E, time, currentFloor, closest destination, and the Elevator identity number 
+	 */
 	public synchronized void sendData() {
 		String eData = new String("E," + time + "," + getCurrentFloor() + "," + closestDestination() + "," + elevatorNumber);
 		byte[] eDataByte= eData.getBytes();
