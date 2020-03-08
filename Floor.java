@@ -14,12 +14,12 @@ import java.util.List;
 @SuppressWarnings("unused")//java.util.Arrays is suppressed
 public class Floor implements Runnable{
 	
-	public BufferedReader input;
-	public String instructions;
-	public int currentTime, inputTime;
-	public int floorNumber, destination;
-	public List<Integer> inputFloors, destinations;
-	public Scheduler scheduler;
+	private BufferedReader input;
+	private String instructions;
+	private int currentTime, inputTime;
+	private int floorNumber, destination;
+	private List<Integer> inputFloors, destinations;
+	private Scheduler scheduler;
 	DatagramPacket sendPacket, receivePacket;
 	DatagramSocket receiveSocket , sendSocket;
 	@SuppressWarnings("unused") //schedulerIP is suppressed
