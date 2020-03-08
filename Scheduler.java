@@ -1,50 +1,177 @@
 package project;
+import java.util.ArrayList;
+import java.util.List;
+import java.net.*;
+import java.io.*;
 /**
  * 
  * Subsystem that communicates with the floors and elevator through the control
  *
  */
-public class Scheduler implements Runnable{
-	public int[] floors;
-	public double inputTime;
-	public Control control;
+public class Scheduler {
+	DatagramPacket sendPacketE,sendPacketF, receivePacket;
+	DatagramSocket sendSocketE,sendSocketF, receiveSocket;
+	InetAddress elevatorAddress, floorAddress;
+	int elevatorPort, floorPort;
+	private List<Integer> floors;
+	private List<Elevator> elevators;
+	private SchedulerState SchedulerUse;
+	private double inputTime;
+	private String time; //Time in the format of hh:mm:ss
+	private List<Integer> inputFloors, destinations, elevatorList; //List of aspects of the elevator
+	private boolean dir;
+	private int currElev;
 	
 	/**
 	 * Simple constructor which connects the scheduler with the controller
 	 * @param control is a class which allows for the three threads to communicate
 	 */
-	public Scheduler(Control control) {
-		this.control = control;
+	public Scheduler(int numOfElev, int numOfFloors) {
+		try {
+			sendSocketE = new DatagramSocket();
+			sendSocketF = new DatagramSocket();
+			receiveSocket= new DatagramSocket(5000);
+		}catch(SocketException se) {
+			se.printStackTrace();
+			System.exit(1);
+		}
+		destinations = new ArrayList<Integer>();
+		elevatorList = new ArrayList<Integer>();
+		inputFloors = new ArrayList<Integer>();
+		elevators = new ArrayList<Elevator>();
+		for (int i = 0; i < numOfElev; i++) {
+			Elevator temp = new Elevator(i, this);
+			elevators.add(temp);
+		}
+		floors = new ArrayList<Integer>();
+		for (int j = 0; j < numOfFloors; j++) {
+			floors.add(j);
+		}
+
+
 	}
-	/**
-	 * Confirms that data has been received from floor and sets data out to true.
-	 * This allows the elevator thread to run properly.
+	/*
 	 * 
-	 * @param inputFloor the floor that the elevator is on when it receives the command
-	 * @param destination the floor that the elevator will be going towards.
 	 */
-	public void recieveData(int inputFloor, int destination) {
-		System.out.print("Data recieved from floor " + inputFloor + " to bring passenger to floor " + destination + "\n");
-		control.dataOut = true;
+	public synchronized void receiveData() {
+		byte data[] = new byte[250];
+		receivePacket = new DatagramPacket(data, data.length);
+		System.out.print("Scheduler: Waiting for input Packet. \n");
+		try {
+			System.out.println("Waiting...");
+			receiveSocket.receive(receivePacket);
+		}catch(IOException e){
+			System.out.print("IO Exception: Likely:");
+			System.out.print("receive Socket Timed Out.\n"+ e);
+			e.printStackTrace();
+			System.exit(1);
+		}
+		
+		//Process datagram received
+		System.out.println("Scheduler: Packet received :");
+		System.out.println("From host: "+ receivePacket.getAddress());
+		
+		System.out.println("Host port: "+ receivePacket.getPort());
+		int len = receivePacket.getLength();
+		
+		String received = new String(data,0,len);
+		/*
+		 * Process input here:
+		 * steps: check if Elevator or floor{
+		 * if according address in here is null{
+		 * set address and port 
+		 * else process normally
+		 */
+		if(received.charAt(0)==('E')) {
+			if(elevatorAddress.equals(null)) {
+				elevatorAddress = receivePacket.getAddress();
+				elevatorPort = receivePacket.getPort();
+			}
+			String[] elevatorData = received.split(",");
+			time = elevatorData[1];
+			if(Integer.parseInt(elevatorData[2])<Integer.parseInt(elevatorData[3])) {
+				dir = true;
+			}
+			else if(Integer.parseInt(elevatorData[2])==Integer.parseInt(elevatorData[3])) {
+				destinations.remove(Integer.parseInt(elevatorData[3]));
+			}
+			else {
+				dir = false;
+			}
+			currElev = Integer.parseInt(elevatorData[4]);
+			
+		}
+		else {
+			if(floorAddress.equals(null)) {
+				floorAddress = receivePacket.getAddress();
+				floorPort = receivePacket.getPort();
+			}
+			String[] floorData = received.split(",");
+			
+			String eData = new String(floorData[1]+","+floorData[2]+","+floorData[3]);
+			byte[] eDataByte= eData.getBytes();
+			sendPacketE=new DatagramPacket(eDataByte,eDataByte.length,elevatorAddress,elevatorPort);
+			try {
+				sendSocketE.send(sendPacketE);
+			}
+			catch(IOException e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
+			System.out.println(floorData[1]+" Scheduler: Data received from floor"+floorData[2]+" and sent to elevator");
+		}
+		
+		
+		/*
+		*dataOut = true;
+		*elevatorList.add(inputFloor);
+		*elevatorList.add(destination);
+		*inputFloors.remove(0);
+		*destinations.remove(0);
+		*/
+
+	}
+	public synchronized void sendData() {
+		String eData = new String(time + "," + destinations.get(0) + "," + dir);
+		byte[] eDataByte= eData.getBytes();
+		sendPacketE=new DatagramPacket(eDataByte,eDataByte.length,elevatorAddress,elevatorPort);
+		try {
+			sendSocketE.send(sendPacketE);
+		}catch(IOException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+		System.out.println(" Scheduler: Data recieved from elevator, data from scheduler sent to scheduler");
 	}
 	
 	public void run() {
-		while (true) {
-			//This if statement confirms that there is an entity in the elevator and that there has been data put in the floor
-			if(!control.destination.isEmpty() && control.dataIn) {
-				//prepares for the elevator thread to run and makes sure that the control is updated for the situation
-				recieveData(control.inputFloor.get(0), control.destination.get(0));
-				control.elevatorList.add(control.inputFloor.get(0));
-				control.elevatorList.add(control.destination.get(0));
-				control.inputFloor.remove(0);
-				control.destination.remove(0);
-			}
-			//prevents unnecessary code execution when if statement isn't met.
-			try {
-				Thread.sleep(100);
-			}catch (InterruptedException e) {
-				
-			}
+		
+		while(true) {
+			receiveData();
 		}
 	}
+	public static void main(String[] args) {
+		Scheduler scheduler = new Scheduler(2, 5);
+
+		scheduler.run();
+	}
+	public InetAddress getFloorAddress() {
+		return floorAddress;
+	}
+	public void setFloorAddress(InetAddress floorAddress) {
+		this.floorAddress = floorAddress;
+	}
+	public List<Integer> getDestinations() {
+		return destinations;
+	}
+	public void setDestinations(List<Integer> destinations) {
+		this.destinations = destinations;
+	}
+	public List<Integer> getElevatorList() {
+		return elevatorList;
+	}
+	public void setElevatorList(List<Integer> elevatorList) {
+		this.elevatorList = elevatorList;
+	}
+	
 }
