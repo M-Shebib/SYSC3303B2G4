@@ -42,7 +42,7 @@ public class Floor implements Runnable{
 			e.printStackTrace();
 		}
 	      try {
-		         receiveSocket = new DatagramSocket();
+		         sendSocket = new DatagramSocket();
 		         
 		      } catch (SocketException se) {
 		         se.printStackTrace();
@@ -76,9 +76,15 @@ public class Floor implements Runnable{
 	
 	public synchronized void sendData() {
 		
-		String sData = new String("E," + instructions);
+		String sData = new String("," + instructions);
 		byte sDataByte[] = sData.getBytes();
 		sendPacket = new DatagramPacket(sDataByte, sDataByte.length,schedulerIP,schedulerPort);
+		try {
+			sendSocket.send(sendPacket);
+		}catch(IOException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
 	}
 	
 
@@ -90,7 +96,7 @@ public class Floor implements Runnable{
 			 
 			//If there is still a line of buffered reader with instructions execute read data
 			while((instructions = input.readLine()) !=null) {
-				if (instructions.matches("\\d{2}:\\d{2}:\\d{2}:\\d{2},\\d{2},\\d{2}")) {
+				if (instructions.matches("\\d{2}:\\d{2}:\\d{2}:\\d{2},\\d{1},\\d{1}")) {
 					readData();
 					//When all of the instructions are read there is a pause and then the floor number
 					//and destination are added to control system.

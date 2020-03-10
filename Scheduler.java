@@ -83,11 +83,13 @@ public class Scheduler {
 		 * set address and port 
 		 * else process normally
 		 */
-		if(received.charAt(0)==('E')) {
-			if(elevatorAddress.equals(null)) {
+		if(received.charAt(0)==('D')) {
+			System.out.println("Scheduler data recieved:"+received);
 				elevatorAddress = receivePacket.getAddress();
 				elevatorPort = receivePacket.getPort();
-			}
+			
+		}else if(received.charAt(0)==('E')) {
+			System.out.println("Scheduler data recieved:"+received);
 			String[] elevatorData = received.split(",");
 			time = elevatorData[1];
 			if(Integer.parseInt(elevatorData[2])<Integer.parseInt(elevatorData[3])) {
@@ -103,12 +105,12 @@ public class Scheduler {
 			
 		}
 		else {
-			if(floorAddress.equals(null)) {
+			
 				floorAddress = receivePacket.getAddress();
 				floorPort = receivePacket.getPort();
-			}
-			String[] floorData = received.split(",");
 			
+			String[] floorData = received.split(",");
+			System.out.println("Scheduler data recieved:"+received);
 			String eData = new String(floorData[1]+","+floorData[2]+","+floorData[3]);
 			byte[] eDataByte= eData.getBytes();
 			sendPacketE=new DatagramPacket(eDataByte,eDataByte.length,elevatorAddress,elevatorPort);
@@ -148,8 +150,12 @@ public class Scheduler {
 	public void run() {
 		
 		while(true) {
+			
 			receiveData();
+			
+
 		}
+		
 	}
 	public InetAddress getFloorAddress() {
 		return floorAddress;
