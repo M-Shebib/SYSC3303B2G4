@@ -1,4 +1,3 @@
-
 import java.util.ArrayList;
 import java.util.List;
 import java.net.*;
@@ -9,132 +8,195 @@ import java.io.*;
  *
  */
 public class Scheduler {
-	public DatagramPacket sendPacketE,sendPacketF, recievePacket;
-	public DatagramSocket sendSocketE,sendSocketF, recieveSocket;
-	public InetAddress elevatorAddress, floorAddress;
-	public int elevatorPort, floorPort;
-	public List<Integer> floors;
-	public List<Elevator> elevators;
-	public SchedulerState SchedulerUse;
-	public double inputTime;
-	public List<Integer> inputFloors, destinations, elevatorList; //List of aspects of the elevator
-	public boolean dataIn, dataOut;
+	DatagramPacket sendPacketE,sendPacketF, receivePacket;
+	DatagramSocket sendSocketE,sendSocketF, receiveSocket;
+	InetAddress elevatorAddress, floorAddress;
+	int elevatorPort, floorPort;
+	private List<Integer> floors;
+	private List<Elevator> elevators;
+	@SuppressWarnings("unused") //SchedulerUse isn't currently used
+	private SchedulerState SchedulerUse;
+	private double inputTime;
+	private String time; //Time in the format of hh:mm:ss
+	private List<Integer> inputFloors, destinations, elevatorList; //List of aspects of the elevator
+	private boolean dir;
+	private int currElev;
 	
 	/**
 	 * Simple constructor which connects the scheduler with the controller
 	 * @param control is a class which allows for the three threads to communicate
 	 */
-	public Scheduler() {
+	public Scheduler(int numOfElev, int numOfFloors) {
 		try {
 			sendSocketE = new DatagramSocket();
 			sendSocketF = new DatagramSocket();
-			recieveSocket= new DatagramSocket(5000);
+			receiveSocket= new DatagramSocket(400);
 		}catch(SocketException se) {
 			se.printStackTrace();
 			System.exit(1);
 		}
+		currElev = -1;
 		destinations = new ArrayList<Integer>();
 		elevatorList = new ArrayList<Integer>();
 		inputFloors = new ArrayList<Integer>();
 		elevators = new ArrayList<Elevator>();
-		int numOfElev = 0;
 		for (int i = 0; i < numOfElev; i++) {
-			Elevator temp = new Elevator(i, this);
+			Elevator temp = new Elevator(i);
 			elevators.add(temp);
 		}
 		floors = new ArrayList<Integer>();
-		int numOfFloors = 0;
 		for (int j = 0; j < numOfFloors; j++) {
 			floors.add(j);
 		}
-		dataIn = false;
-		dataOut = false;
+
 
 	}
-	/**
-	 * Confirms that data has been received from floor and sets data out to true.
-	 * This allows the elevator thread to run properly.
-	 * @param floorNumber 
+	/*
 	 * 
-	 * @param inputFloor the floor that the elevator is on when it receives the command
-	 * @param destination the floor that the elevator will be going towards.
 	 */
-	public synchronized void receiveData(int floorNumber) {
+	public synchronized void receiveData() {
 		byte data[] = new byte[250];
-		recievePacket = new DatagramPacket(data, data.length);
+		receivePacket = new DatagramPacket(data, data.length);
 		System.out.print("Scheduler: Waiting for input Packet. \n");
 		try {
-			System.out.print("Waiting...");
-			recieveSocket.receive(recievePacket);
+			System.out.println("Waiting...");
+			receiveSocket.receive(receivePacket);
 		}catch(IOException e){
 			System.out.print("IO Exception: Likely:");
-			System.out.print("Recieve Socket Timed Out.\n"+ e);
+			System.out.print("receive Socket Timed Out.\n"+ e);
 			e.printStackTrace();
 			System.exit(1);
 		}
 		
-		//Process datagram recieved
-		System.out.println("Scheduler: Packet Recieved :");
-		System.out.println("From host: "+recievePacket.getAddress());
+		//Process datagram received
+		System.out.println("Scheduler: Packet received :");
+		System.out.println("From host: "+ receivePacket.getAddress());
 		
-		System.out.println("Host port: "+ recievePacket.getPort());
-		int len = recievePacket.getLength();
+		System.out.println("Host port: "+ receivePacket.getPort());
+		int len = receivePacket.getLength();
 		
-		String recieved = new String(data,0,len);
+		String received = new String(data,0,len);
 		/*
-		 * Proccess input here:
-		 * steps: check if Elevat or or floor{
+		 * Process input here:
+		 * steps: check if Elevator or floor{
 		 * if according address in here is null{
 		 * set address and port 
 		 * else process normally
 		 */
-		if(recieved.equals("E")) {
+		if(received.charAt(0)==('E')) {
 			if(elevatorAddress.equals(null)) {
-				elevatorAddress = recievePacket.getAddress();
-				elevatorPort = recievePacket.getPort();
-			}else {
-				//process recieved data from the elevator(destination floor)
+				elevatorAddress = receivePacket.getAddress();
+				elevatorPort = receivePacket.getPort();
 			}
-		}else {
+			String[] elevatorData = received.split(",");
+			time = elevatorData[1];
+			if(Integer.parseInt(elevatorData[2])<Integer.parseInt(elevatorData[3])) {
+				dir = true;
+			}
+			else if(Integer.parseInt(elevatorData[2])==Integer.parseInt(elevatorData[3])) {
+				destinations.remove(Integer.parseInt(elevatorData[3]));
+			}
+			else {
+				dir = false;
+			}
+			currElev = Integer.parseInt(elevatorData[4]);
+			
+		}
+		else {
 			if(floorAddress.equals(null)) {
-				floorAddress = recievePacket.getAddress();
-				floorPort = recievePacket.getPort();
+				floorAddress = receivePacket.getAddress();
+				floorPort = receivePacket.getPort();
 			}
-			String[] floorData = recieved.split(",");
+			String[] floorData = received.split(",");
+			
 			String eData = new String(floorData[1]+","+floorData[2]+","+floorData[3]);
 			byte[] eDataByte= eData.getBytes();
 			sendPacketE=new DatagramPacket(eDataByte,eDataByte.length,elevatorAddress,elevatorPort);
 			try {
 				sendSocketE.send(sendPacketE);
-			}catch(IOException e) {
+			}
+			catch(IOException e) {
 				e.printStackTrace();
 				System.exit(1);
 			}
-			System.out.println(eData+" Scheduler: Data recieved from floor"+eData+" and sent to elevator");
+			System.out.println(floorData[1]+" Scheduler: Data received from floor"+floorData[2]+" and sent to elevator "+ currElev);
 		}
 		
 		
+		/*
+		*dataOut = true;
+		*elevatorList.add(inputFloor);
+		*elevatorList.add(destination);
+		*inputFloors.remove(0);
+		*destinations.remove(0);
+		*/
 
-
+	}
+	public synchronized void sendData() {
+		String eData = new String(time + "," + destinations.get(0) + "," + dir);
+		byte[] eDataByte= eData.getBytes();
+		sendPacketE=new DatagramPacket(eDataByte,eDataByte.length,elevatorAddress,elevatorPort);
+		try {
+			sendSocketE.send(sendPacketE);
+		}catch(IOException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+		System.out.println(" Scheduler: Data recieved from elevator, data from scheduler sent to scheduler");
 	}
 	
 	public void run() {
 		
 		while(true) {
-			receiveData(elevatorPort);
+			receiveData();
 		}
 	}
+	public InetAddress getFloorAddress() {
+		return floorAddress;
+	}
+	public double getInputTime() {
+		return inputTime;
+	}
+	public void setInputTime(double inputTime) {
+		this.inputTime = inputTime;
+	}
+	public List<Integer> getInputFloors() {
+		return inputFloors;
+	}
+	public void setInputFloors(List<Integer> inputFloors) {
+		this.inputFloors = inputFloors;
+	}
+	public void setFloorAddress(InetAddress floorAddress) {
+		this.floorAddress = floorAddress;
+	}
+	public List<Integer> getDestinations() {
+		return destinations;
+	}
+	public void setDestinations(List<Integer> destinations) {
+		this.destinations = destinations;
+	}
+	public List<Integer> getElevatorList() {
+		return elevatorList;
+	}
+	public void setElevatorList(List<Integer> elevatorList) {
+		this.elevatorList = elevatorList;
+	}
+	/**
+	 * @param inputFloor the inputFloor to add to list
+	 */
+	public void addInputFloor(Integer inputFloor) {
+		this.inputFloors.add(inputFloor);
+	}
+	/**
+	 * @param destinations the destinations to add to list
+	 */
+	public void addDestinations(Integer destination) {
+		this.destinations.add(destination);
+	}
+	
 	public static void main(String[] args) {
-		Scheduler scheduler = new Scheduler();
+		Scheduler scheduler = new Scheduler(2, 5);
 
 		scheduler.run();
-	}
-	public void moveElevatorToDestination(int elevatorNumber, int destInput) {
-		// TODO Auto-generated method stub
-		
-	}
-	public void receiveData1(int floorNumber) {
-		// TODO Auto-generated method stub
-		
 	}
 }
