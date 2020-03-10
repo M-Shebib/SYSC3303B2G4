@@ -10,18 +10,19 @@ import java.util.List;
  * This thread is for the floor subsystem which knows what the initial floor is
  * as well as reads to determine the target floor.
  */
+@SuppressWarnings("unused")//java.util.Arrays is suppressed
 public class Floor implements Runnable{
 	
-	public BufferedReader input;
-	public String instructions;
-	public int currentTime, inputTime;
-	public int floorNumber, destination;
-	public List<Integer> inputFloors, destinations;
-	public Scheduler scheduler;
+	private BufferedReader input;
+	private String instructions;
+	private int currentTime, inputTime;
+	private int floorNumber, destination;
+	private List<Integer> inputFloors, destinations;
+	private Scheduler scheduler;
 	DatagramPacket sendPacket, receivePacket;
 	DatagramSocket receiveSocket , sendSocket;
 	private InetAddress schedulerIP;
-	private int schedulerPort = 420;
+	private int schedulerPort = 400;
 	/**
 	 * Creates an instance of the floor thread connected to the control.
 	 * As well as attempts to read a file that has the inputs.
@@ -47,6 +48,11 @@ public class Floor implements Runnable{
 		         se.printStackTrace();
 		         System.exit(1);
 		      }
+	      try {
+				input = new BufferedReader(new FileReader("inputfile.txt"));
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			}
 	}
 	/**
 	 * Takes the data held in the input buffered reader and separates it into values that
@@ -68,6 +74,13 @@ public class Floor implements Runnable{
 
 	}
 	
+	public synchronized void sendData() {
+		
+		String sData = new String("E," + instructions);
+		byte sDataByte[] = sData.getBytes();
+		sendPacket = new DatagramPacket(sDataByte, sDataByte.length,schedulerIP,schedulerPort);
+	}
+	
 
 	/**
 	 * runs the floor thread
@@ -85,9 +98,7 @@ public class Floor implements Runnable{
 						Thread.sleep(inputTime-currentTime);
 						System.out.println("Floor Subsystem: input recieved after "+ (inputTime-currentTime)+" ms, sending data to scheduler");
 						currentTime=inputTime;
-						scheduler.inputFloors.add(floorNumber);
-						scheduler.destinations.add(destination);
-						scheduler.receiveData(floorNumber);
+						sendData();
 					}
 					catch (InterruptedException e) {
 					
@@ -102,6 +113,10 @@ public class Floor implements Runnable{
 		catch (IOException e) {
 				
 		}	
+	}
+	public static void main(String[] args) {
+		Floor floor = new Floor();
+		floor.run();
 	}
 
 }
