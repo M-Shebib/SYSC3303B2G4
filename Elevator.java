@@ -1,5 +1,6 @@
 
 import java.util.*;
+import java.math.*;
 import java.net.*;
 import java.io.*;
 
@@ -18,19 +19,19 @@ public class Elevator implements Runnable{
 	private boolean dir; //direction the elevator is going
 	private String time; //Time in the format of hh:mm:ss
 	private List<Integer> inputFloor, destinations, elevatorList;
-	private Scheduler scheduler;
 	/*
 	 * Initializes the Elevator thread and sets current floor to 1 and the direction to up and initializes ElevatorUse
 	 * @param elevatorNumber the number of the elevator, so that there can be multiple elevators at once
 	 * @param scheduler the Scheduler class that allows everything to communicate with one another
 	 */
 	public Elevator(int elevatorNumber) {
+		destinations = new ArrayList<Integer>();
 		setElevatorUse(ElevatorState.Idle);
 		this.elevatorNumber = elevatorNumber;
 		setCurrentFloor(1);
 		elevatorPort = 400;
 		try {
-			elevatorAddress = InetAddress.getLocalHost();
+			elevatorAddress = InetAddress.getByName("134.117.59.189");
 		} catch (UnknownHostException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -101,12 +102,8 @@ public class Elevator implements Runnable{
 						else {
 							moveDown(); //if dir = false elevator is going down
 						}
+						sendData();
 					}while(currentFloor!=closestDestination()); //Do this until the currentFloor is the destination
-					
-					//removes the initial floor that a passenger is picked up on
-					scheduler.getElevatorList().remove(0);
-					//removes the initial floor that was set to be the destination.
-					scheduler.getElevatorList().remove(0);
 					//Sets elevator back to idle.
 					ElevatorUse.nextState(dir);
 				
@@ -156,7 +153,7 @@ public class Elevator implements Runnable{
 		}
 		String[] schedulerData = recieved.split(","); //splits elements of the datagram which are split up by commas
 		time = schedulerData[0]; //First element of the datagram is the time
-		 //second element of datagram is the destination
+		destinations.add(Integer.parseInt(schedulerData[1])); //second element of datagram is the destination
 		int direction = Integer.parseInt(schedulerData[2]); //third and final element of datagram is whether the elevator is going up or down. with up being true and down being false
 		if (direction == 1) {
 			dir = true;
@@ -171,6 +168,7 @@ public class Elevator implements Runnable{
 	 * sends a Datagram containing the identifier E, time, currentFloor, closest destination, and the Elevator identity number 
 	 */
 	public synchronized void sendData() {
+		//int destination = new Random().nextInt(20);
 		String eData = new String("E," + time + "," + getCurrentFloor() + "," + closestDestination() + "," + elevatorNumber);
 		byte[] eDataByte= eData.getBytes();
 		sendPacketE=new DatagramPacket(eDataByte,eDataByte.length,elevatorAddress,elevatorPort);
