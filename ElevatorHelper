@@ -1,0 +1,166 @@
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketException;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+
+public class ElevatorHelper {
+	
+	private ArrayList<Elevator> elevatorList;
+	DatagramPacket sendPacketE, recievePacket; //DatagramPacket for recieval and sending of datagram packets
+	DatagramSocket sendRecieveSocket; //DatagramSocket for the receival and sending of packets within the sockets
+	InetAddress elevatorAddress; //Address for the elevator
+	int elevatorPort; //integer for the port associated with the Elevator
+	private int dir; //direction the elevator is going
+	private String time; //Time in the format of hh:mm:ss
+	private Elevator idleElevator;
+	private boolean atDestination;
+	
+	public ElevatorHelper(int numOfElevators) {
+		
+		for (int i = 0; i < numOfElevators; i++) {
+			Elevator elevator = new Elevator(i);
+			elevatorList = new ArrayList<Elevator>();
+			elevatorList.add(elevator);
+			elevator.run();
+		}
+		elevatorPort = 400;
+		try {
+			elevatorAddress = InetAddress.getByName("134.117.59.189");
+		} catch (UnknownHostException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		 try {
+	         sendRecieveSocket = new DatagramSocket();
+	         
+	      } catch (SocketException se) {
+	         se.printStackTrace();
+	         System.exit(1);
+	      }
+	}
+	
+	public void sendDummy() {
+		String eDummy = new String("D I am a dummy message");
+		byte[] dummyByte = eDummy.getBytes();
+		sendPacketE=new DatagramPacket (dummyByte,dummyByte.length,elevatorAddress,elevatorPort);
+		try {
+			sendRecieveSocket.send(sendPacketE);
+		}catch(IOException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+		System.out.println("Elevator: Dummy sent");
+	}
+	
+	public synchronized void receiveData() {
+		byte data[] = new byte[250];
+		//datagramPacket that is meant to receive the packet of data
+		recievePacket = new DatagramPacket(data, data.length);
+		System.out.print("ElevatorSystem: Waiting for input Packet. \n");
+		try {
+			System.out.println("Waiting...");
+			sendRecieveSocket.receive(recievePacket);
+		}catch(IOException e){
+			System.out.print("IO Exception: Likely:");
+			System.out.print("Recieve Socket Timed Out.\n"+ e);
+			e.printStackTrace();
+			System.exit(1);
+		}
+		
+		//Process datagram received
+		System.out.println("ElevatorSystem: Packet Recieved :");
+		System.out.println("From host: "+recievePacket.getAddress());
+		System.out.println("Host port: "+ recievePacket.getPort());
+		int len = recievePacket.getLength();
+		
+		String recieved = new String(data,0,len);
+		/*
+		 * checks if there is an address and port associated with the elevator
+		 */
+		if(elevatorAddress.equals(null)) {
+			elevatorAddress = recievePacket.getAddress();
+			elevatorPort = recievePacket.getPort();
+		}
+		else {
+		}
+		idleElevator = getIdleElevator();
+		String[] schedulerData = recieved.split(","); //splits elements of the datagram which are split up by commas
+		time = schedulerData[0]; //First element of the datagram is the time
+		idleElevator.addDestinations(Integer.parseInt(schedulerData[1])); //second element of datagram is the destination
+		int dir = Integer.parseInt(schedulerData[2]); //third and final element of datagram is whether the elevator is going up or down. with up being true and down being false
+		idleElevator.setDirection(dir);
+	}
+	
+	/**
+	 * sends a Datagram containing the identifier E, time, currentFloor, closest destination, and the Elevator identity number 
+	 */
+	public synchronized void sendData() {
+		String eData = new String("E," + time + "," + idleElevator.getCurrentFloor() + ", " + idleElevator.getElevatorNumber());
+		byte[] eDataByte= eData.getBytes();
+		sendPacketE=new DatagramPacket(eDataByte,eDataByte.length,elevatorAddress,elevatorPort);
+		try {
+			sendRecieveSocket.send(sendPacketE);
+		}catch(IOException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+		System.out.println(" Elevator: Data recieved from scheduler, data from elevator "+ idleElevator.getElevatorNumber() +" sent to scheduler");
+	}
+	
+	public void run() {
+		sendDummy();
+			while(true) {
+				receiveData();
+				//Switches Elevator into ready to move state
+				idleElevator.getElevatorUse().nextState(dir);
+				//If the elevatorList isn't empty and dataOut is true			
+					//Sets Elevator to moving towards destination
+					idleElevator.getElevatorUse().nextState(dir);
+					
+					do {
+						if(dir == 1) {//if dir = true then elevator is going up
+							idleElevator.moveUp();
+						}
+						else {
+							idleElevator.moveDown(); //if dir = false elevator is going down
+						}
+						sendData();
+					}while(atDestination); //Do this until the currentFloor is the destination
+					//Sets elevator back to idle.
+					idleElevator.getElevatorUse().nextState(dir);
+				
+				//sleeps if the conditions aren't met.
+				try {
+					Thread.sleep(200);
+				}catch (InterruptedException e) {
+					
+				}
+			}
+			
+		}
+	
+	public Elevator getIdleElevator() {
+		
+		for (int i = 0; i < elevatorList.size(); i++) {
+			if (elevatorList.get(i).getElevatorUse() == ElevatorState.Idle) {
+				return elevatorList.get(i);
+			}
+		}
+		return null;
+	}
+	
+	public ArrayList<Elevator> getElevatorList(){
+		return elevatorList;
+	}
+	
+	public void moveElevatorUp(int elevatorNumber) {
+		elevatorList.get(elevatorNumber).moveUp();
+	}
+	
+	public void moveElevatorDown(int elevatorNumber) {
+		elevatorList.get(elevatorNumber).moveDown();
+	}
+}
