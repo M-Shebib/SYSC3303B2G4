@@ -1,4 +1,5 @@
-import java.util.List;
+
+import java.util.*;
 
 /**
  * Thread for the elevator subsystem
@@ -6,49 +7,104 @@ import java.util.List;
 
 public class Elevator implements Runnable{
 	
-	public ElevatorState ElevatorUse; //The elevator currently in use
-	public int[] destination;
-	public int elevatorNumber;
-	public int currentFloor;
-	public List<Integer> inputFloor, destinations, elevatorList;
-	public Scheduler scheduler;
+	
+	
+	private ElevatorState ElevatorUse; //The elevator currently in use
+	private int elevatorNumber; //individual identifier of this elevator
+	private int currentFloor; //current floor that the elevator is on
+	private List<Integer> destinations;
+	private int dir;
 	/*
 	 * Initializes the Elevator thread and sets current floor to 1 and the direction to up and initializes ElevatorUse
 	 * @param elevatorNumber the number of the elevator, so that there can be multiple elevators at once
 	 * @param scheduler the Scheduler class that allows everything to communicate with one another
 	 */
-	public Elevator(int elevatorNumber, Scheduler scheduler) {
-		ElevatorUse = ElevatorState.Idle;
-		this.scheduler = scheduler;
+	public Elevator(int elevatorNumber) {
+		destinations = new ArrayList<Integer>();
+		setElevatorUse(ElevatorState.Idle);
 		this.elevatorNumber = elevatorNumber;
-		currentFloor = 1;
+		setCurrentFloor(1);
+		
 	}
 	/**
-	 * This method prints out an explanation of the movement of the elevator.
-	 * 
-	 * @param inputFloor The floor at which passengers are picked up 
-	 * @param currentFloor the starting floor of the elevator
-	 * @param destination The destination floor
+	 * moves the elevator up one floor and sends the updated data to the scheduler
 	 */
 	public void moveUp() {
-		currentFloor ++;
-		System.out.println("Elevator system: Elevator moved up to 1 floor");
-	}
-	public void moveDown() {
-		currentFloor --;
-		System.out.println("Elevator system: Elevator moved down to 1 floor");
-	}
-	public void destinationInput(int destInput) {
-		scheduler.moveElevatorToDestination(this.elevatorNumber, destInput);
+		if(!getElevatorUse().name().equals("Moving")) {
+			setElevatorUse(ElevatorState.Moving);
+		}
+		setCurrentFloor(getCurrentFloor() + 1);
+		System.out.println("Elevator " + elevatorNumber + ": Elevator moved up to 1 floor");
 	}
 	/**
-	 * runs the elevator thread
+	 * moves the elevator down one floor and sends the updated data to the scheduler
 	 */
-	public void run() {
-		while(true) {
-			
-			
+	public void moveDown() {
+		if(!getElevatorUse().name().equals("Moving")) {
+			setElevatorUse(ElevatorState.Moving);
 		}
+		setCurrentFloor(getCurrentFloor() - 1);
+		System.out.println("Elevator " + elevatorNumber + ": Elevator moved down to 1 floor");
+	}
+	
+	public void destinationInElevator() {
+		int numOfDests = (int)(Math.random() * ((1 - 0) + 1));
+		for (int i = 1; i <= numOfDests; i++) {
+			destinations.add((int)(Math.random() * ((22 - 1) + 1)) + 1);
+		}
+	}
+	
+	/**
+	 * @return the currentFloor
+	 */
+	public int getCurrentFloor() {
+		return currentFloor;
+	}
+	/**
+	 * @param currentFloor the currentFloor to set
+	 */
+	public void setCurrentFloor(int currentFloor) {
+		this.currentFloor = currentFloor;
+	}
+	/**
+	 * @return the elevatorUse
+	 */
+	public ElevatorState getElevatorUse() {
+		return ElevatorUse;
+	}
+	/**
+	 * @param elevatorUse the elevatorUse to set
+	 */
+	public void setElevatorUse(ElevatorState elevatorUse) {
+		ElevatorUse = elevatorUse;
+	}
+
+	/**
+	 * @param destinations the destinations to add to list
+	 */
+	public void addDestinations(Integer destination) {
+		this.destinations.add(destination);
+	}
+
+	public int getElevatorNumber() {
+		return elevatorNumber;
+	}
+	
+	public void setDirection(int dir) {
+		this.dir = dir;
+	}
+	
+	public int closestDestination() {
+		int closeDest=1000; //int is so high that the data will be replaced by a destination
+		for(int i = 0; i < destinations.size(); i++) {//for the size of the destinations list
+			if((Math.abs(currentFloor-destinations.get(i)))<(Math.abs(currentFloor-closeDest))) {//absolute difference means that if the current floor is closer to the destination it is true
+				closeDest = destinations.get(i); //changes closeDest to be the destination that is being checked
+			}
+		}
+		return closeDest;
+	}
+	
+	public void run() {
 		
 	}
 }
